@@ -16,5 +16,9 @@ type StatusBadgeProps = {
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  return <Badge className={cn(statusClassName[status], className)}>{ORDER_STATUS_LABELS[status]}</Badge>;
+  return (
+    <Badge className={cn(statusClassName[status], className)}>
+      {ORDER_STATUS_LABELS[status]}
+    </Badge>
+  );
 }

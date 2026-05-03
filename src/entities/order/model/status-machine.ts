@@ -8,5 +8,9 @@ const transitions: Record<OrderStatus, OrderStatus[]> = {
 };
 
 export function canChangeOrderStatus(from: OrderStatus, to: OrderStatus) {
-  return from === to || transitions[from].includes(to);
+  return transitions[from].includes(to);
+}
+
+export function getAllowedOrderStatusTransitions(status: OrderStatus) {
+  return transitions[status];
 }

@@ -6,5 +6,7 @@ type RouteLabelProps = {
 };
 
 export function RouteLabel({ order }: RouteLabelProps) {
-  return <span className="font-medium text-slate-900">{formatRoute(order)}</span>;
+  return (
+    <span className="font-medium text-slate-900">{formatRoute(order)}</span>
+  );
 }

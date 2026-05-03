@@ -1,75 +1,192 @@
-import { carriers, orders, setOrders } from "@/shared/api/mock-db";
+import { carriers, createSeedOrders } from "@/shared/api/mock-db";
 import { mockRequest } from "@/shared/api/mock-client";
-import type { Order, OrderDraftInput, OrdersFilters, OrderStatus } from "@/entities/order/model/types";
+import {
+  canChangeOrderStatus,
+  getAllowedOrderStatusTransitions,
+} from "@/entities/order/model/status-machine";
+import type {
+  Order,
+  OrderDraftInput,
+  OrdersQuery,
+  OrdersResponse,
+  OrderStatus,
+} from "@/entities/order/model/types";
 
-function matchesFilters(order: Order, filters: OrdersFilters) {
-  const normalizedSearch = filters.search.trim().toLowerCase();
-  const matchesStatus = filters.status === "all" || order.status === filters.status;
-  const matchesSearch =
-    normalizedSearch.length === 0 ||
-    order.referenceNumber.toLowerCase().includes(normalizedSearch) ||
-    order.clientName.toLowerCase().includes(normalizedSearch) ||
-    order.carrierName.toLowerCase().includes(normalizedSearch);
+const ORDERS_STORAGE_KEY = "vektor:orders:v2";
 
-  return matchesStatus && matchesSearch;
+function readOrders() {
+  const rawValue = window.localStorage.getItem(ORDERS_STORAGE_KEY);
+  if (!rawValue) {
+    const seed = createSeedOrders();
+    writeOrders(seed);
+    return seed;
+  }
+
+  return JSON.parse(rawValue) as Order[];
 }
 
-function buildOrder(input: OrderDraftInput): Order {
-  const carrier = carriers.find((item) => item.id === input.carrierId);
+function writeOrders(orders: Order[]) {
+  window.localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+}
+
+function getPickupTime(order: Order) {
+  return new Date(order.stops[0]?.appointmentDate ?? order.createdAt).getTime();
+}
+
+function sortOrders(orders: Order[], query: OrdersQuery) {
+  const direction = query.sortOrder === "asc" ? 1 : -1;
+
+  return [...orders].sort((left, right) => {
+    const result = compareOrders(left, right, query.sortBy);
+    return result * direction;
+  });
+}
+
+function compareOrders(
+  left: Order,
+  right: Order,
+  sortBy: OrdersQuery["sortBy"],
+) {
+  if (sortBy === "pickupDate") {
+    return getPickupTime(left) - getPickupTime(right);
+  }
+  if (sortBy === "rate") {
+    return left.rate - right.rate;
+  }
+  if (sortBy === "status") {
+    return left.status.localeCompare(right.status);
+  }
+  return left.referenceNumber.localeCompare(right.referenceNumber);
+}
+
+function filterOrders(orders: Order[], query: OrdersQuery) {
+  const search = query.search.trim().toLowerCase();
+
+  return orders.filter((order) => {
+    const matchesStatus =
+      query.status === "all" || order.status === query.status;
+    const matchesSearch =
+      search.length === 0 ||
+      order.referenceNumber.toLowerCase().includes(search) ||
+      order.clientName.toLowerCase().includes(search) ||
+      order.carrier.name.toLowerCase().includes(search);
+
+    return matchesStatus && matchesSearch;
+  });
+}
+
+function toOrder(input: OrderDraftInput): Order {
+  const carrier =
+    carriers.find((item) => item.id === input.carrierId) ?? carriers[0];
   const now = new Date().toISOString();
 
   return {
-    ...input,
     id: `ord-${crypto.randomUUID()}`,
+    referenceNumber: input.referenceNumber,
     status: "pending",
-    carrierName: carrier?.name ?? "Unknown Carrier",
+    clientName: input.clientName,
+    carrier,
+    equipmentType: input.equipmentType,
+    loadType: input.loadType,
+    rate: input.rate,
+    weight: input.weight,
+    notes: input.notes,
+    stops: input.stops.map((stop, index) => ({ ...stop, order: index + 1 })),
+    statusHistory: [{ from: null, to: "pending", changedAt: now }],
     createdAt: now,
     updatedAt: now,
   };
 }
 
 export const orderApi = {
-  list: async (filters: OrdersFilters) =>
-    mockRequest(() => orders.filter((order) => matchesFilters(order, filters))),
-
-  getById: async (orderId: string) =>
-    mockRequest(() => orders.find((order) => order.id === orderId) ?? null),
-
-  create: async (input: OrderDraftInput) =>
+  getOrders: async (query: OrdersQuery): Promise<OrdersResponse> =>
     mockRequest(() => {
-      const order = buildOrder(input);
-      setOrders([order, ...orders]);
+      const filtered = filterOrders(readOrders(), query);
+      const sorted = sortOrders(filtered, query);
+      const start = (query.page - 1) * query.pageSize;
+
+      return {
+        data: sorted.slice(start, start + query.pageSize),
+        total: sorted.length,
+      };
+    }),
+
+  getOrder: async (id: string): Promise<Order> =>
+    mockRequest(() => {
+      const order = readOrders().find((item) => item.id === id);
+      if (!order) {
+        throw new Error("Order not found");
+      }
       return order;
     }),
 
-  update: async (orderId: string, input: OrderDraftInput) =>
+  createOrder: async (input: OrderDraftInput): Promise<Order> =>
     mockRequest(() => {
-      const carrier = carriers.find((item) => item.id === input.carrierId);
-      const nextOrders = orders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              ...input,
-              carrierName: carrier?.name ?? order.carrierName,
-              updatedAt: new Date().toISOString(),
-            }
-          : order,
-      );
-      setOrders(nextOrders);
-      return nextOrders.find((order) => order.id === orderId) ?? null;
+      const order = toOrder(input);
+      writeOrders([order, ...readOrders()]);
+      return order;
     }),
 
-  delete: async (orderId: string) =>
+  updateOrder: async (id: string, input: OrderDraftInput): Promise<Order> =>
     mockRequest(() => {
-      setOrders(orders.filter((order) => order.id !== orderId));
+      const orders = readOrders();
+      const existing = orders.find((order) => order.id === id);
+      if (!existing) {
+        throw new Error("Order not found");
+      }
+      const carrier =
+        carriers.find((item) => item.id === input.carrierId) ??
+        existing.carrier;
+      const updated: Order = {
+        ...existing,
+        ...input,
+        carrier,
+        stops: input.stops.map((stop, index) => ({
+          ...stop,
+          order: index + 1,
+        })),
+        updatedAt: new Date().toISOString(),
+      };
+      writeOrders(orders.map((order) => (order.id === id ? updated : order)));
+      return updated;
     }),
 
-  changeStatus: async (orderId: string, status: OrderStatus) =>
+  deleteOrder: async (id: string): Promise<void> =>
     mockRequest(() => {
-      const nextOrders = orders.map((order) =>
-        order.id === orderId ? { ...order, status, updatedAt: new Date().toISOString() } : order,
-      );
-      setOrders(nextOrders);
-      return nextOrders.find((order) => order.id === orderId) ?? null;
+      const order = readOrders().find((item) => item.id === id);
+      if (order?.status !== "pending") {
+        throw new Error("Only pending orders can be deleted");
+      }
+      writeOrders(readOrders().filter((item) => item.id !== id));
     }),
+
+  updateOrderStatus: async (
+    id: string,
+    status: OrderStatus,
+    note?: string,
+  ): Promise<Order> =>
+    mockRequest(() => {
+      const orders = readOrders();
+      const existing = orders.find((order) => order.id === id);
+      if (!existing) {
+        throw new Error("Order not found");
+      }
+      if (!canChangeOrderStatus(existing.status, status)) {
+        throw new Error("Status transition is not allowed");
+      }
+      const now = new Date().toISOString();
+      const updated: Order = {
+        ...existing,
+        status,
+        statusHistory: [
+          ...existing.statusHistory,
+          { from: existing.status, to: status, changedAt: now, note },
+        ],
+        updatedAt: now,
+      };
+      writeOrders(orders.map((order) => (order.id === id ? updated : order)));
+      return updated;
+    }),
+
+  getAllowedTransitions: getAllowedOrderStatusTransitions,
 };

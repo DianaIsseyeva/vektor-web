@@ -1,6 +1,1 @@
-export type Carrier = {
-  id: string;
-  name: string;
-  mcNumber: string;
-  rating: number;
-};
+export type { Carrier } from "@/entities/order/model/types";

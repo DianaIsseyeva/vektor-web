@@ -1,6 +1,17 @@
-import type { AppointmentType, OrderStatus, StopKind } from "@/entities/order/model/types";
+import type {
+  AppointmentType,
+  EquipmentType,
+  LoadType,
+  OrderStatus,
+  StopType,
+} from "@/entities/order/model/types";
 
-export const ORDER_STATUSES: OrderStatus[] = ["pending", "in_transit", "delivered", "cancelled"];
+export const ORDER_STATUSES: OrderStatus[] = [
+  "pending",
+  "in_transit",
+  "delivered",
+  "cancelled",
+];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pending",
@@ -9,10 +20,10 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: "Cancelled",
 };
 
-export const STOP_KIND_LABELS: Record<StopKind, string> = {
-  pickup: "Pick Up",
+export const STOP_TYPE_LABELS: Record<StopType, string> = {
+  pick_up: "Pick Up",
   stop: "Stop",
-  dropoff: "Drop Off",
+  drop_off: "Drop Off",
 };
 
 export const APPOINTMENT_TYPE_LABELS: Record<AppointmentType, string> = {
@@ -21,5 +32,22 @@ export const APPOINTMENT_TYPE_LABELS: Record<AppointmentType, string> = {
   fcfs: "FCFS",
 };
 
-export const EQUIPMENT_TYPES = ["Dry Van", "Reefer", "Flatbed", "Step Deck", "Power Only"] as const;
-export const LOAD_TYPES = ["FTL", "LTL", "Partial"] as const;
+export const EQUIPMENT_TYPE_LABELS: Record<EquipmentType, string> = {
+  dry_van: "Dry Van",
+  reefer: "Reefer",
+  flatbed: "Flatbed",
+  step_deck: "Step Deck",
+};
+
+export const LOAD_TYPE_LABELS: Record<LoadType, string> = {
+  ftl: "FTL",
+  ltl: "LTL",
+};
+
+export const EQUIPMENT_TYPES: EquipmentType[] = [
+  "dry_van",
+  "reefer",
+  "flatbed",
+  "step_deck",
+];
+export const LOAD_TYPES: LoadType[] = ["ftl", "ltl"];
