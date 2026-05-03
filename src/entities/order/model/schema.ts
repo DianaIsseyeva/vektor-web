@@ -24,7 +24,7 @@ export const orderFormSchema = z.object({
   loadType: z.enum(["ftl", "ltl"]),
   rate: z.coerce.number().min(1, "Rate must be greater than 0"),
   weight: z.coerce.number().min(1, "Weight must be greater than 0"),
-  notes: z.string().optional(),
+  notes: z.string(),
   stops: z
     .array(orderStopSchema)
     .min(2, "At least pickup and drop off are required")

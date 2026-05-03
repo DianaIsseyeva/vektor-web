@@ -34,7 +34,7 @@ type OrderSectionProps = {
 export function OrderSection({ control, register, errors }: OrderSectionProps) {
   const carriersQuery = useQuery({
     queryKey: ["carriers"],
-    queryFn: carrierApi.list,
+    queryFn: () => carrierApi.getCarriers(),
   });
 
   return (

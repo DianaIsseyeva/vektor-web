@@ -55,14 +55,14 @@ export type Order = {
   loadType: LoadType;
   rate: number;
   weight: number;
-  notes?: string;
+  notes: string;
   stops: Stop[];
   statusHistory: StatusChange[];
   createdAt: string;
   updatedAt: string;
 };
 
-export type OrderDraftInput = {
+export type CreateOrderInput = {
   referenceNumber: string;
   clientName: string;
   carrierId: string;
@@ -70,9 +70,11 @@ export type OrderDraftInput = {
   loadType: LoadType;
   rate: number;
   weight: number;
-  notes?: string;
+  notes: string;
   stops: Stop[];
 };
+
+export type OrderDraftInput = CreateOrderInput;
 
 export type OrdersFilters = {
   search: string;
@@ -94,6 +96,6 @@ export type OrdersResponse = {
 export type LocalDraft = {
   id: string;
   title: string;
-  formData: Partial<OrderDraftInput>;
+  formData: Partial<CreateOrderInput>;
   savedAt: string;
 };
