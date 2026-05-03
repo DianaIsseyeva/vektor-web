@@ -1,5 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { canChangeOrderStatus, orderApi, type OrderStatus } from "@/entities/order";
+import {
+  canChangeOrderStatus,
+  orderApi,
+  type OrderStatus,
+} from "@/entities/order";
 
 type ChangeOrderStatusPayload = {
   orderId: string;
@@ -11,12 +15,16 @@ export function useChangeOrderStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ orderId, currentStatus, nextStatus }: ChangeOrderStatusPayload) => {
+    mutationFn: ({
+      orderId,
+      currentStatus,
+      nextStatus,
+    }: ChangeOrderStatusPayload) => {
       if (!canChangeOrderStatus(currentStatus, nextStatus)) {
         throw new Error("Status transition is not allowed");
       }
 
-      return orderApi.changeStatus(orderId, nextStatus);
+      return orderApi.updateOrderStatus(orderId, nextStatus);
     },
     onSuccess: (order) => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });

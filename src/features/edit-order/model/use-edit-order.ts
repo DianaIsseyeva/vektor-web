@@ -10,7 +10,8 @@ export function useEditOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ orderId, input }: EditOrderPayload) => orderApi.update(orderId, input),
+    mutationFn: ({ orderId, input }: EditOrderPayload) =>
+      orderApi.updateOrder(orderId, input),
     onSuccess: (order) => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
       if (order) {

@@ -5,7 +5,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: OrderDraftInput) => orderApi.create(input),
+    mutationFn: (input: OrderDraftInput) => orderApi.createOrder(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
     },

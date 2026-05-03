@@ -5,7 +5,7 @@ export function useDeleteOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (orderId: string) => orderApi.delete(orderId),
+    mutationFn: (orderId: string) => orderApi.deleteOrder(orderId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
     },

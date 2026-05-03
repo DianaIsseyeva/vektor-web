@@ -7,7 +7,10 @@ type DeleteOrderButtonProps = {
   onDeleted?: () => void;
 };
 
-export function DeleteOrderButton({ orderId, onDeleted }: DeleteOrderButtonProps) {
+export function DeleteOrderButton({
+  orderId,
+  onDeleted,
+}: DeleteOrderButtonProps) {
   const deleteOrder = useDeleteOrder();
 
   return (

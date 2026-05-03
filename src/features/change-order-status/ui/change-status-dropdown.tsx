@@ -3,7 +3,7 @@ import {
   ORDER_STATUSES,
   ORDER_STATUS_LABELS,
   StatusBadge,
-  canChangeOrderStatus,
+  getAllowedOrderStatusTransitions,
   type OrderStatus,
 } from "@/entities/order";
 import { useChangeOrderStatus } from "@/features/change-order-status/model/use-change-order-status";
@@ -19,8 +19,12 @@ type ChangeStatusDropdownProps = {
   status: OrderStatus;
 };
 
-export function ChangeStatusDropdown({ orderId, status }: ChangeStatusDropdownProps) {
+export function ChangeStatusDropdown({
+  orderId,
+  status,
+}: ChangeStatusDropdownProps) {
   const changeStatus = useChangeOrderStatus();
+  const allowedStatuses = getAllowedOrderStatusTransitions(status);
 
   return (
     <DropdownMenu>
@@ -32,9 +36,15 @@ export function ChangeStatusDropdown({ orderId, status }: ChangeStatusDropdownPr
         {ORDER_STATUSES.map((nextStatus) => (
           <DropdownMenuItem
             key={nextStatus}
-            disabled={!canChangeOrderStatus(status, nextStatus) || changeStatus.isPending}
+            disabled={
+              !allowedStatuses.includes(nextStatus) || changeStatus.isPending
+            }
             onClick={() => {
-              changeStatus.mutate({ orderId, currentStatus: status, nextStatus });
+              changeStatus.mutate({
+                orderId,
+                currentStatus: status,
+                nextStatus,
+              });
             }}
           >
             <StatusBadge status={nextStatus} />
