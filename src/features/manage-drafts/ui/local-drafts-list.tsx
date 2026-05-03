@@ -1,9 +1,11 @@
-import { Link } from "react-router-dom";
 import { useDraftStore } from "@/features/manage-drafts/model/draft-store";
-import { routes } from "@/shared/config/routes";
 import { Button } from "@/shared/ui/button";
 
-export function LocalDraftsList() {
+type LocalDraftsListProps = {
+  onResume?: (draftId: string) => void;
+};
+
+export function LocalDraftsList({ onResume }: LocalDraftsListProps) {
   const drafts = useDraftStore((state) => state.drafts);
   const deleteDraft = useDraftStore((state) => state.deleteDraft);
 
@@ -25,10 +27,13 @@ export function LocalDraftsList() {
               <p className="text-xs text-slate-400">Saved locally</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link to={`${routes.newOrder}?draftId=${draft.id}`}>
-                  Resume
-                </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onResume?.(draft.id)}
+              >
+                Resume
               </Button>
               <Button
                 type="button"

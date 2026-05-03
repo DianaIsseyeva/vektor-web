@@ -41,7 +41,7 @@ The project follows Feature-Sliced Design:
 ## Tradeoffs
 
 - The carrier combobox is implemented with a native `datalist` to keep the first iteration small.
-- Draft tabs are represented as a persisted draft list and saved indicator; full tabbed workspace can be expanded from the current store.
+- Draft creation opens a dialog workspace with persisted draft tabs; the direct `/orders/new` route is kept as a fallback entry point.
 - Toasts and confirmation dialogs are not added yet; API errors are handled in the table with retry.
 
 ## What I'd Improve With More Time

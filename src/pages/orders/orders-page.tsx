@@ -11,6 +11,7 @@ import {
   OrdersFilters as OrdersFiltersWidget,
   OrdersTable,
 } from "@/widgets/orders-table";
+import { DraftWorkspace } from "@/widgets/order-form";
 
 export function OrdersPage() {
   const [filters, setFilters] = useState<OrdersFiltersState>({
@@ -20,6 +21,8 @@ export function OrdersPage() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<OrderSortBy>("pickupDate");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [isDraftWorkspaceOpen, setIsDraftWorkspaceOpen] = useState(false);
+  const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
   const pageSize = 10;
 
   const ordersQuery = useQuery({
@@ -38,7 +41,12 @@ export function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <LocalDraftsList />
+      <LocalDraftsList
+        onResume={(draftId) => {
+          setInitialDraftId(draftId);
+          setIsDraftWorkspaceOpen(true);
+        }}
+      />
       <OrdersFiltersWidget
         filters={filters}
         onChange={(nextFilters) => {
@@ -58,6 +66,10 @@ export function OrdersPage() {
         onPageChange={(nextPage) => {
           setPage(Math.min(Math.max(nextPage, 1), totalPages));
         }}
+        onCreateOrder={() => {
+          setInitialDraftId(null);
+          setIsDraftWorkspaceOpen(true);
+        }}
         onRetry={() => void ordersQuery.refetch()}
         onSortChange={(nextSortBy) => {
           if (nextSortBy === sortBy) {
@@ -67,6 +79,12 @@ export function OrdersPage() {
             setSortOrder("asc");
           }
         }}
+      />
+      <DraftWorkspace
+        open={isDraftWorkspaceOpen}
+        initialDraftId={initialDraftId}
+        onOpenChange={setIsDraftWorkspaceOpen}
+        onCreated={() => void ordersQuery.refetch()}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import {
   canChangeOrderStatus,
   getAllowedOrderStatusTransitions,
 } from "@/entities/order/model/status-machine";
+import { orderFormSchema } from "@/entities/order/model/schema";
 import type {
   Order,
   OrderDraftInput,
@@ -122,26 +123,28 @@ export const orderApi = {
 
   createOrder: async (input: OrderDraftInput): Promise<Order> =>
     mockRequest(() => {
-      const order = toOrder(input);
+      const validatedInput = orderFormSchema.parse(input);
+      const order = toOrder(validatedInput);
       writeOrders([order, ...readOrders()]);
       return order;
     }),
 
   updateOrder: async (id: string, input: OrderDraftInput): Promise<Order> =>
     mockRequest(() => {
+      const validatedInput = orderFormSchema.parse(input);
       const orders = readOrders();
       const existing = orders.find((order) => order.id === id);
       if (!existing) {
         throw new Error("Order not found");
       }
       const carrier =
-        carriers.find((item) => item.id === input.carrierId) ??
+        carriers.find((item) => item.id === validatedInput.carrierId) ??
         existing.carrier;
       const updated: Order = {
         ...existing,
-        ...input,
+        ...validatedInput,
         carrier,
-        stops: input.stops.map((stop, index) => ({
+        stops: validatedInput.stops.map((stop, index) => ({
           ...stop,
           order: index + 1,
         })),

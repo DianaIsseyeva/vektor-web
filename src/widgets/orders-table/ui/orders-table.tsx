@@ -48,6 +48,7 @@ type OrdersTableProps = {
   sortOrder: SortOrder;
   onPageChange: (page: number) => void;
   onSortChange: (sortBy: OrderSortBy) => void;
+  onCreateOrder: () => void;
   onRetry: () => void;
 };
 
@@ -64,6 +65,7 @@ export function OrdersTable({
   sortOrder,
   onPageChange,
   onSortChange,
+  onCreateOrder,
   onRetry,
 }: OrdersTableProps) {
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
@@ -78,11 +80,9 @@ export function OrdersTable({
           <h2 className="text-lg font-semibold text-slate-950">Orders</h2>
           <p className="text-sm text-slate-500">Database of wire tenders</p>
         </div>
-        <Button asChild>
-          <Link to={routes.newOrder}>
-            <Plus className="size-4" />
-            Create New Order
-          </Link>
+        <Button type="button" onClick={onCreateOrder}>
+          <Plus className="size-4" />
+          Create New Order
         </Button>
       </div>
       <div className="overflow-x-auto">

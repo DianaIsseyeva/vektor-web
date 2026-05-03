@@ -1,25 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { OrderFormValues } from "@/entities/order";
+import type { LocalDraft, OrderDraftInput } from "@/entities/order";
 
 const MAX_DRAFTS = 5;
 
 type DraftState = {
   drafts: LocalDraft[];
-  createDraft: (formData?: Partial<OrderFormValues>) => LocalDraft;
-  updateDraft: (id: string, formData: Partial<OrderFormValues>) => void;
+  createDraft: (formData?: Partial<OrderDraftInput>) => LocalDraft;
+  updateDraft: (id: string, formData: Partial<OrderDraftInput>) => void;
   deleteDraft: (id: string) => void;
   clearDrafts: () => void;
 };
 
-type LocalDraft = {
-  id: string;
-  title: string;
-  formData: Partial<OrderFormValues>;
-  savedAt: string;
-};
-
-function makeDraft(formData: Partial<OrderFormValues> = {}): LocalDraft {
+function makeDraft(formData: Partial<OrderDraftInput> = {}): LocalDraft {
   const now = new Date().toISOString();
 
   return {

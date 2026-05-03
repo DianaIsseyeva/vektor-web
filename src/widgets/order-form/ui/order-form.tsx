@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, type SubmitErrorHandler } from "react-hook-form";
-import { DraftTabs, useDraftStore } from "@/features/manage-drafts";
 import {
   orderFormSchema,
   type OrderDraftInput,
@@ -17,7 +16,8 @@ type OrderFormProps = {
   submitLabel: string;
   isSubmitting?: boolean;
   submitError?: string;
-  draftId?: string;
+  savedLabel?: string;
+  onValuesChange?: (values: OrderDraftInput) => void;
   onSubmit: (values: OrderDraftInput) => Promise<void>;
 };
 
@@ -26,13 +26,10 @@ export function OrderForm({
   submitLabel,
   isSubmitting = false,
   submitError,
-  draftId,
+  savedLabel,
+  onValuesChange,
   onSubmit,
 }: OrderFormProps) {
-  const updateDraft = useDraftStore((state) => state.updateDraft);
-  const createDraft = useDraftStore((state) => state.createDraft);
-  const deleteDraft = useDraftStore((state) => state.deleteDraft);
-  const activeDraftIdRef = useRef<string | null>(draftId ?? null);
   const [localSubmitError, setLocalSubmitError] = useState<string | null>(null);
   const form = useForm<OrderFormValues>({
     resolver: zodResolver(orderFormSchema),
@@ -42,14 +39,18 @@ export function OrderForm({
   });
 
   useEffect(() => {
-    const draft = draftId ? { id: draftId } : createDraft(defaultValues);
-    activeDraftIdRef.current = draft.id;
-    const subscription = form.watch(() => {
-      updateDraft(draft.id, form.getValues());
-    });
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
+
+  useEffect(() => {
+    if (!onValuesChange) {
+      return undefined;
+    }
+
+    const subscription = form.watch(() => onValuesChange(form.getValues()));
 
     return () => subscription.unsubscribe();
-  }, [createDraft, defaultValues, draftId, form, updateDraft]);
+  }, [form, onValuesChange]);
 
   const handleInvalid: SubmitErrorHandler<OrderFormValues> = () => {
     window.setTimeout(() => {
@@ -63,9 +64,6 @@ export function OrderForm({
     setLocalSubmitError(null);
     try {
       await onSubmit(values);
-      if (activeDraftIdRef.current) {
-        deleteDraft(activeDraftIdRef.current);
-      }
     } catch (error) {
       setLocalSubmitError(
         error instanceof Error ? error.message : "Failed to save order",
@@ -81,12 +79,9 @@ export function OrderForm({
       onSubmit={form.handleSubmit(handleValid, handleInvalid)}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <DraftTabs />
-          <span className="text-sm text-slate-500">
-            {isSubmitting ? "Saving order..." : "Draft autosaved"}
-          </span>
-        </div>
+        <span className="text-sm text-slate-500">
+          {isSubmitting ? "Saving order..." : (savedLabel ?? "Draft saved")}
+        </span>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : submitLabel}
         </Button>
