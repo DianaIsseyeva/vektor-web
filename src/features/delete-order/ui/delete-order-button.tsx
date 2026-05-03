@@ -4,11 +4,13 @@ import { useDeleteOrder } from "@/features/delete-order/model/use-delete-order";
 
 type DeleteOrderButtonProps = {
   orderId: string;
+  disabled?: boolean;
   onDeleted?: () => void;
 };
 
 export function DeleteOrderButton({
   orderId,
+  disabled = false,
   onDeleted,
 }: DeleteOrderButtonProps) {
   const deleteOrder = useDeleteOrder();
@@ -18,8 +20,12 @@ export function DeleteOrderButton({
       type="button"
       variant="destructive"
       size="sm"
-      disabled={deleteOrder.isPending}
+      disabled={disabled || deleteOrder.isPending}
       onClick={() => {
+        if (!window.confirm("Delete this order?")) {
+          return;
+        }
+
         deleteOrder.mutate(orderId, { onSuccess: onDeleted });
       }}
     >

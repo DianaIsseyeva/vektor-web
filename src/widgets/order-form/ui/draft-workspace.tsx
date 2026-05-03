@@ -34,6 +34,7 @@ export function DraftWorkspace({
   const createOrder = useCreateOrder();
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const pendingDraftValuesRef = useRef<OrderDraftInput | null>(null);
   const createdDraftForOpenRef = useRef(false);
 
   useEffect(() => {
@@ -96,6 +97,24 @@ export function DraftWorkspace({
     setActiveDraftId(draft.id);
   };
 
+  const flushDraft = () => {
+    if (!activeDraft || !pendingDraftValuesRef.current) {
+      return;
+    }
+
+    updateDraft(activeDraft.id, pendingDraftValuesRef.current);
+    pendingDraftValuesRef.current = null;
+  };
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(flushDraft, 5000);
+    return () => window.clearInterval(intervalId);
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="left-4 top-4 h-[calc(100vh-32px)] w-[calc(100vw-32px)] max-w-none translate-x-0 translate-y-0">
@@ -157,7 +176,7 @@ export function DraftWorkspace({
             </Button>
           </div>
         </div>
-        <div className="overflow-y-auto p-4">
+        <div className="overflow-y-auto p-4" onBlur={flushDraft}>
           {activeDraft ? (
             <OrderForm
               key={activeDraft.id}
@@ -166,9 +185,12 @@ export function DraftWorkspace({
               savedLabel={savedLabel}
               isSubmitting={createOrder.isPending}
               submitError={createOrder.error?.message}
-              onValuesChange={(values) => updateDraft(activeDraft.id, values)}
+              onValuesChange={(values) => {
+                pendingDraftValuesRef.current = values;
+              }}
               onSubmit={async (values) => {
                 try {
+                  updateDraft(activeDraft.id, values);
                   const order = await createOrder.mutateAsync(values);
                   deleteDraft(activeDraft.id);
                   setToastMessage("Order created");
