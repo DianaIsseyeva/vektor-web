@@ -78,7 +78,7 @@ export type OrderDraftInput = CreateOrderInput;
 
 export type OrdersFilters = {
   search: string;
-  status: OrderStatus | "all";
+  statuses: OrderStatus[];
 };
 
 export type OrdersQuery = OrdersFilters & {

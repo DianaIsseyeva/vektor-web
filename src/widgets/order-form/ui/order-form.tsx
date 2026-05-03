@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, type SubmitErrorHandler } from "react-hook-form";
 import {
@@ -83,6 +84,7 @@ export function OrderForm({
           {isSubmitting ? "Saving order..." : (savedLabel ?? "Draft saved")}
         </span>
         <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
           {isSubmitting ? "Saving..." : submitLabel}
         </Button>
       </div>

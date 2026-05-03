@@ -33,6 +33,7 @@ export function DraftWorkspace({
   const clearDrafts = useDraftStore((state) => state.clearDrafts);
   const createOrder = useCreateOrder();
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const createdDraftForOpenRef = useRef(false);
 
   useEffect(() => {
@@ -97,7 +98,12 @@ export function DraftWorkspace({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="left-4 top-4 h-[calc(100vh-32px)] w-[calc(100vw-32px)] max-w-none translate-x-0 translate-y-0">
+        {toastMessage ? (
+          <div className="absolute right-16 top-4 z-10 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-lg">
+            {toastMessage}
+          </div>
+        ) : null}
         <div className="border-b border-slate-200 bg-white p-4 pr-14">
           <DialogTitle className="text-lg font-semibold text-slate-950">
             Draft Workspace
@@ -162,10 +168,21 @@ export function DraftWorkspace({
               submitError={createOrder.error?.message}
               onValuesChange={(values) => updateDraft(activeDraft.id, values)}
               onSubmit={async (values) => {
-                const order = await createOrder.mutateAsync(values);
-                deleteDraft(activeDraft.id);
-                onCreated?.(order.id);
-                onOpenChange(false);
+                try {
+                  const order = await createOrder.mutateAsync(values);
+                  deleteDraft(activeDraft.id);
+                  setToastMessage("Order created");
+                  onCreated?.(order.id);
+                  onOpenChange(false);
+                } catch (error) {
+                  setToastMessage(
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to create order",
+                  );
+                  window.setTimeout(() => setToastMessage(null), 3000);
+                  throw error;
+                }
               }}
             />
           ) : (

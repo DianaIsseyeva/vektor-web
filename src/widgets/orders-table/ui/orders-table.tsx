@@ -4,18 +4,24 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  CopyPlus,
+  Eye,
   Trash2,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ChangeStatusDropdown } from "@/features/change-order-status";
+import { useChangeOrderStatus } from "@/features/change-order-status";
 import { useDeleteOrder } from "@/features/delete-order";
 import {
   EQUIPMENT_TYPE_LABELS,
+  ORDER_STATUS_LABELS,
   RouteLabel,
   formatDate,
   formatRate,
+  getAllowedOrderStatusTransitions,
   getPickupDate,
   type Order,
+  type OrderStatus,
   type OrderSortBy,
   type SortOrder,
 } from "@/entities/order";
@@ -47,8 +53,10 @@ type OrdersTableProps = {
   sortBy: OrderSortBy;
   sortOrder: SortOrder;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   onSortChange: (sortBy: OrderSortBy) => void;
   onCreateOrder: () => void;
+  onDuplicateOrder: (order: Order) => void;
   onRetry: () => void;
 };
 
@@ -64,8 +72,10 @@ export function OrdersTable({
   sortBy,
   sortOrder,
   onPageChange,
+  onPageSizeChange,
   onSortChange,
   onCreateOrder,
+  onDuplicateOrder,
   onRetry,
 }: OrdersTableProps) {
   const totalPages = Math.max(Math.ceil(total / pageSize), 1);
@@ -140,7 +150,11 @@ export function OrdersTable({
             ) : null}
             {!isLoading && !error
               ? orders.map((order) => (
-                  <OrdersTableRow key={order.id} order={order} />
+                  <OrdersTableRow
+                    key={order.id}
+                    order={order}
+                    onDuplicateOrder={onDuplicateOrder}
+                  />
                 ))
               : null}
             {!isLoading && !error && orders.length === 0 ? (
@@ -161,6 +175,17 @@ export function OrdersTable({
           Showing {from}-{to} of {total}
         </span>
         <div className="flex items-center gap-2">
+          <select
+            value={pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            className="h-9 rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+          >
+            {[10, 25, 50].map((size) => (
+              <option key={size} value={size}>
+                {size} / page
+              </option>
+            ))}
+          </select>
           <Button
             type="button"
             variant="outline"
@@ -232,9 +257,33 @@ function SortableHead({
   );
 }
 
-function OrdersTableRow({ order }: { order: Order }) {
+function OrdersTableRow({
+  order,
+  onDuplicateOrder,
+}: {
+  order: Order;
+  onDuplicateOrder: (order: Order) => void;
+}) {
   const navigate = useNavigate();
   const deleteOrder = useDeleteOrder();
+  const changeStatus = useChangeOrderStatus();
+  const allowedTransitions = getAllowedOrderStatusTransitions(order.status);
+
+  const handleDelete = () => {
+    if (!window.confirm(`Delete ${order.referenceNumber}?`)) {
+      return;
+    }
+
+    deleteOrder.mutate(order.id);
+  };
+
+  const handleChangeStatus = (nextStatus: OrderStatus) => {
+    changeStatus.mutate({
+      orderId: order.id,
+      currentStatus: order.status,
+      nextStatus,
+    });
+  };
 
   return (
     <TableRow
@@ -269,16 +318,36 @@ function OrdersTableRow({ order }: { order: Order }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to={routes.editOrder(order.id)}>
-                <Pencil className="size-4" />
-                Edit
-              </Link>
+            <DropdownMenuItem
+              onClick={() => navigate(routes.orderDetail(order.id))}
+            >
+              <Eye className="size-4" />
+              View
             </DropdownMenuItem>
             <DropdownMenuItem
+              disabled={order.status !== "pending"}
+              onClick={() => navigate(routes.editOrder(order.id))}
+            >
+              <Pencil className="size-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDuplicateOrder(order)}>
+              <CopyPlus className="size-4" />
+              Duplicate as Draft
+            </DropdownMenuItem>
+            {allowedTransitions.map((status) => (
+              <DropdownMenuItem
+                key={status}
+                disabled={changeStatus.isPending}
+                onClick={() => handleChangeStatus(status)}
+              >
+                Change to {ORDER_STATUS_LABELS[status]}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
-              disabled={deleteOrder.isPending}
-              onClick={() => deleteOrder.mutate(order.id)}
+              disabled={deleteOrder.isPending || order.status !== "pending"}
+              onClick={handleDelete}
             >
               <Trash2 className="size-4" />
               Delete

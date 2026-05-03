@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { LocalDraftsList } from "@/features/manage-drafts";
+import { LocalDraftsList, useDraftStore } from "@/features/manage-drafts";
 import {
+  type Order,
   orderApi,
+  type OrderDraftInput,
   type OrderSortBy,
   type OrdersFilters as OrdersFiltersState,
   type SortOrder,
@@ -16,15 +18,14 @@ import { DraftWorkspace } from "@/widgets/order-form";
 export function OrdersPage() {
   const [filters, setFilters] = useState<OrdersFiltersState>({
     search: "",
-    status: "all",
+    statuses: [],
   });
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState<OrderSortBy>("pickupDate");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isDraftWorkspaceOpen, setIsDraftWorkspaceOpen] = useState(false);
   const [initialDraftId, setInitialDraftId] = useState<string | null>(null);
-  const pageSize = 10;
-
   const ordersQuery = useQuery({
     queryKey: ["orders", filters, page, pageSize, sortBy, sortOrder],
     queryFn: () =>
@@ -66,8 +67,19 @@ export function OrdersPage() {
         onPageChange={(nextPage) => {
           setPage(Math.min(Math.max(nextPage, 1), totalPages));
         }}
+        onPageSizeChange={(nextPageSize) => {
+          setPageSize(nextPageSize);
+          setPage(1);
+        }}
         onCreateOrder={() => {
           setInitialDraftId(null);
+          setIsDraftWorkspaceOpen(true);
+        }}
+        onDuplicateOrder={(order) => {
+          const draft = useDraftStore
+            .getState()
+            .createDraft(orderToDraftInput(order));
+          setInitialDraftId(draft.id);
           setIsDraftWorkspaceOpen(true);
         }}
         onRetry={() => void ordersQuery.refetch()}
@@ -88,4 +100,18 @@ export function OrdersPage() {
       />
     </div>
   );
+}
+
+function orderToDraftInput(order: Order): OrderDraftInput {
+  return {
+    referenceNumber: `${order.referenceNumber}-COPY`,
+    clientName: order.clientName,
+    carrierId: order.carrier.id,
+    equipmentType: order.equipmentType,
+    loadType: order.loadType,
+    rate: order.rate,
+    weight: order.weight,
+    notes: order.notes,
+    stops: order.stops.map((stop) => ({ ...stop, id: crypto.randomUUID() })),
+  };
 }

@@ -10,7 +10,7 @@ export function LocalDraftsList({ onResume }: LocalDraftsListProps) {
   const deleteDraft = useDraftStore((state) => state.deleteDraft);
 
   if (drafts.length === 0) {
-    return <p className="text-sm text-slate-500">No local draft</p>;
+    return null;
   }
 
   return (

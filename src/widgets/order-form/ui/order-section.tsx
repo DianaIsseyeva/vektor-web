@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   Controller,
   type FieldErrors,
@@ -32,10 +33,16 @@ type OrderSectionProps = {
 };
 
 export function OrderSection({ control, register, errors }: OrderSectionProps) {
+  const [carrierSearch, setCarrierSearch] = useState("");
+  const [isCarrierOpen, setIsCarrierOpen] = useState(false);
   const carriersQuery = useQuery({
-    queryKey: ["carriers"],
-    queryFn: () => carrierApi.getCarriers(),
+    queryKey: ["carriers", carrierSearch],
+    queryFn: () => carrierApi.getCarriers({ search: carrierSearch }),
   });
+  const carriers = useMemo(
+    () => carriersQuery.data ?? [],
+    [carriersQuery.data],
+  );
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -47,22 +54,50 @@ export function OrderSection({ control, register, errors }: OrderSectionProps) {
             control={control}
             name="carrierId"
             render={({ field }) => (
-              <>
+              <div className="relative">
                 <Input
-                  list="carriers"
                   aria-invalid={Boolean(errors.carrierId)}
-                  value={field.value}
+                  value={carrierSearch}
                   onBlur={field.onBlur}
-                  onChange={field.onChange}
+                  onFocus={() => setIsCarrierOpen(true)}
+                  onChange={(event) => {
+                    setCarrierSearch(event.target.value);
+                    setIsCarrierOpen(true);
+                  }}
+                  placeholder="Search carrier by name or MC #"
                 />
-                <datalist id="carriers">
-                  {(carriersQuery.data ?? []).map((carrier) => (
-                    <option key={carrier.id} value={carrier.id}>
-                      {carrier.name} ({carrier.mcNumber})
-                    </option>
-                  ))}
-                </datalist>
-              </>
+                {isCarrierOpen ? (
+                  <div className="absolute z-20 mt-2 max-h-56 w-full overflow-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {carriers.map((carrier) => (
+                      <button
+                        key={carrier.id}
+                        type="button"
+                        className="flex w-full flex-col rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-100"
+                        onClick={() => {
+                          field.onChange(carrier.id);
+                          setCarrierSearch(
+                            `${carrier.name} (${carrier.mcNumber})`,
+                          );
+                          setIsCarrierOpen(false);
+                        }}
+                      >
+                        <span className="font-medium text-slate-900">
+                          {carrier.name}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {carrier.mcNumber}
+                        </span>
+                      </button>
+                    ))}
+                    {carriers.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-slate-500">
+                        No carriers found
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <input type="hidden" value={field.value} readOnly />
+              </div>
             )}
           />
           {errors.carrierId?.message ? (

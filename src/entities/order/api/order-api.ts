@@ -65,7 +65,7 @@ function filterOrders(orders: Order[], query: OrdersQuery) {
 
   return orders.filter((order) => {
     const matchesStatus =
-      query.status === "all" || order.status === query.status;
+      query.statuses.length === 0 || query.statuses.includes(order.status);
     const matchesSearch =
       search.length === 0 ||
       order.referenceNumber.toLowerCase().includes(search) ||
