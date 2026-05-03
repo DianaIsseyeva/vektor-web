@@ -8,7 +8,10 @@ export function Label({
 }: ComponentPropsWithoutRef<typeof LabelPrimitive.Root>) {
   return (
     <LabelPrimitive.Root
-      className={cn("text-sm font-medium leading-none text-slate-700", className)}
+      className={cn(
+        "text-sm font-medium leading-none text-slate-700",
+        className,
+      )}
       {...props}
     />
   );

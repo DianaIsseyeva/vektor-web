@@ -1,14 +1,9 @@
-import { ClipboardList, LayoutDashboard, Menu, Package, Truck } from "lucide-react";
+import { ClipboardList, Menu } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 
-const navItems = [
-  { label: "Overview", to: "/", icon: LayoutDashboard },
-  { label: "Orders", to: routes.orders, icon: ClipboardList },
-  { label: "Carriers", to: "/carriers", icon: Truck },
-  { label: "Equipment", to: "/equipment", icon: Package },
-];
+const navItems = [{ label: "Orders", to: routes.orders, icon: ClipboardList }];
 
 export function AppLayout() {
   return (
